@@ -114,6 +114,17 @@ function SettingsPopover({ apiKeys, setApiKeys, provider, setProvider }: { apiKe
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ provider: providerName, apiKey: key })
       });
+
+      if (!res.ok) {
+        const contentType = res.headers.get("Content-Type");
+        if (contentType && contentType.includes("application/json")) {
+          const err = await res.json();
+          throw new Error(err.error || "Failed to verify key");
+        } else {
+          throw new Error(`Verification failed with status: ${res.status}`);
+        }
+      }
+
       const data = await res.json();
       
       if (data.valid) {
@@ -318,8 +329,13 @@ export default function Home() {
       });
 
       if (!res.ok) {
-        const err = await res.json().catch(() => ({ error: "Unknown error" }));
-        throw new Error(err.error || "TTS request failed");
+        const contentType = res.headers.get("Content-Type");
+        if (contentType && contentType.includes("application/json")) {
+          const err = await res.json().catch(() => ({ error: "Unknown error" }));
+          throw new Error(err.error || "TTS request failed");
+        } else {
+          throw new Error(`TTS request failed with status: ${res.status}`);
+        }
       }
 
       const blob = await res.blob();

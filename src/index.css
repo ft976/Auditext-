@@ -34,11 +34,11 @@
 }
 
 :root {
-  --background: 40 20% 98%;
+  --background: 40 40% 96%;
   --foreground: 222 47% 11%;
-  --card: 40 20% 100%;
+  --card: 40 40% 98%;
   --card-foreground: 222 47% 11%;
-  --popover: 40 20% 100%;
+  --popover: 40 40% 98%;
   --popover-foreground: 222 47% 11%;
   --primary: 258 80% 65%;
   --primary-foreground: 210 40% 98%;
