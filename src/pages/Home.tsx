@@ -87,6 +87,149 @@ function WaveformBars({ active }: { active: boolean }) {
   );
 }
 
+function SettingsPopover({ apiKeys, setApiKeys, provider, setProvider }: { apiKeys: any, setApiKeys: any, provider: string, setProvider: any }) {
+  const [draftKeys, setDraftKeys] = useState(apiKeys);
+  const [isVerifying, setIsVerifying] = useState<Record<string, boolean>>({});
+  const [verifyStatus, setVerifyStatus] = useState<Record<string, "idle" | "success" | "error">>({});
+  const [verifyMessage, setVerifyMessage] = useState<Record<string, string>>({});
+
+  const handleVerifyAndSave = async (providerName: string) => {
+    const key = draftKeys[providerName as keyof typeof draftKeys] as string;
+    if (!key) {
+      // If empty, just save it (removes the key)
+      const newKeys = { ...apiKeys, [providerName]: "" };
+      setApiKeys(newKeys);
+      setVerifyStatus({ ...verifyStatus, [providerName]: "idle" });
+      setVerifyMessage({ ...verifyMessage, [providerName]: "" });
+      return;
+    }
+
+    setIsVerifying({ ...isVerifying, [providerName]: true });
+    setVerifyStatus({ ...verifyStatus, [providerName]: "idle" });
+    setVerifyMessage({ ...verifyMessage, [providerName]: "" });
+
+    try {
+      const res = await fetch("/api/verify-key", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ provider: providerName, apiKey: key })
+      });
+      const data = await res.json();
+      
+      if (data.valid) {
+        setVerifyStatus({ ...verifyStatus, [providerName]: "success" });
+        setVerifyMessage({ ...verifyMessage, [providerName]: "Valid key!" });
+        setApiKeys({ ...apiKeys, [providerName]: key });
+      } else {
+        setVerifyStatus({ ...verifyStatus, [providerName]: "error" });
+        setVerifyMessage({ ...verifyMessage, [providerName]: data.error || "Invalid key" });
+      }
+    } catch (err: any) {
+      setVerifyStatus({ ...verifyStatus, [providerName]: "error" });
+      setVerifyMessage({ ...verifyMessage, [providerName]: err.message || "Failed to verify" });
+    } finally {
+      setIsVerifying({ ...isVerifying, [providerName]: false });
+    }
+  };
+
+  return (
+    <Popover>
+      <PopoverTrigger render={<Button variant="ghost" size="icon" />}>
+        <Settings className="w-5 h-5" />
+      </PopoverTrigger>
+      <PopoverContent align="end" className="w-80">
+        <div className="space-y-4 pt-2">
+          <div className="space-y-2 border-t pt-3">
+            <h4 className="font-medium leading-none">Settings</h4>
+            <p className="text-sm text-muted-foreground">
+              Configure your AI API Keys. Keys are stored safely in your browser.
+            </p>
+          </div>
+          <div className="space-y-4 max-h-[400px] overflow-y-auto pr-2 border-t pt-3 pb-2">
+            <div className="space-y-2 pb-3 border-b">
+              <Label className="font-semibold text-foreground">Active AI Provider</Label>
+              <div className="grid grid-cols-2 gap-2">
+                {[
+                  { id: "gemini", name: "Gemini" },
+                  { id: "openai", name: "OpenAI" },
+                  { id: "elevenlabs", name: "ElevenLabs" },
+                  { id: "deepgram", name: "Deepgram" },
+                  { id: "cartesia", name: "Cartesia" },
+                  { id: "groq", name: "Groq" }
+                ].map(p => {
+                  const hasKey = !!apiKeys[p.id as keyof typeof apiKeys];
+                  return (
+                    <button
+                      key={p.id}
+                      onClick={() => setProvider(p.id)}
+                      disabled={!hasKey}
+                      className={cn(
+                        "px-2 py-1.5 text-xs rounded-lg border transition-all text-center",
+                        provider === p.id 
+                          ? "border-primary bg-primary/10 font-medium text-primary shadow-sm" 
+                          : hasKey 
+                            ? "hover:border-primary/50 text-muted-foreground bg-muted/50"
+                            : "opacity-50 cursor-not-allowed bg-muted/20 text-muted-foreground"
+                      )}
+                    >
+                      {p.name}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            <div className="space-y-4 pt-1">
+              {[
+                { id: "gemini", label: "Google Gemini API Key", placeholder: "AIza...", link: "https://aistudio.google.com/app/apikey" },
+                { id: "openai", label: "OpenAI API Key", placeholder: "sk-...", link: "https://platform.openai.com/api-keys" },
+                { id: "elevenlabs", label: "ElevenLabs API Key", placeholder: "sk_...", link: "https://elevenlabs.io/" },
+                { id: "deepgram", label: "Deepgram API Key", placeholder: "Token ...", link: "https://console.deepgram.com/" },
+                { id: "cartesia", label: "Cartesia API Key", placeholder: "sk_...", link: "https://play.cartesia.ai/" },
+                { id: "groq", label: "Groq API Key (Future Use)", placeholder: "gsk_...", link: "https://console.groq.com/keys" }
+              ].map(p => (
+              <div key={p.id} className="space-y-1">
+                <div className="flex items-center justify-between">
+                  <Label htmlFor={`${p.id}ApiKey`}>{p.label}</Label>
+                  <a href={p.link} target="_blank" rel="noreferrer" className="text-[10px] text-primary hover:underline">Get Key</a>
+                </div>
+                <div className="flex gap-2">
+                  <Input 
+                    id={`${p.id}ApiKey`} 
+                    type="password" 
+                    placeholder={p.placeholder} 
+                    value={draftKeys[p.id as keyof typeof draftKeys] || ""} 
+                    onChange={(e) => {
+                      setDraftKeys({...draftKeys, [p.id]: e.target.value});
+                      setVerifyStatus({...verifyStatus, [p.id]: "idle"});
+                    }} 
+                  />
+                  <Button 
+                    variant={verifyStatus[p.id] === "success" ? "default" : "secondary"}
+                    onClick={() => handleVerifyAndSave(p.id)}
+                    disabled={isVerifying[p.id]}
+                  >
+                    {isVerifying[p.id] ? "..." : (verifyStatus[p.id] === "success" ? "Saved" : "Save")}
+                  </Button>
+                </div>
+                <div className="min-h-[16px]">
+                  {verifyStatus[p.id] === "error" && (
+                      <p className="text-[10px] text-destructive tracking-tight leading-none">{verifyMessage[p.id]}</p>
+                  )}
+                  {verifyStatus[p.id] === "success" && (
+                      <p className="text-[10px] text-green-500 tracking-tight leading-none">{verifyMessage[p.id]}</p>
+                  )}
+                </div>
+              </div>
+            ))}
+            </div>
+          </div>
+        </div>
+      </PopoverContent>
+    </Popover>
+  );
+}
+
 export default function Home() {
   const [text, setText] = useState("");
   const [language, setLanguage] = useState("English");
@@ -99,10 +242,35 @@ export default function Home() {
   const [errorMsg, setErrorMsg] = useState("");
   const [downloadUrl, setDownloadUrl] = useState<string | null>(null);
   const [downloadName, setDownloadName] = useState("audio.wav");
-  const [customApiKey, setCustomApiKey] = useState(() => localStorage.getItem("auditextCustomApiKey") || "");
+  
+  const [provider, setProvider] = useState(() => localStorage.getItem("auditextProvider") || "gemini");
+  const [apiKeys, setApiKeys] = useState(() => {
+    try {
+      const stored = localStorage.getItem("auditextApiKeys");
+      return stored ? JSON.parse(stored) : {
+        gemini: localStorage.getItem("auditextCustomApiKey") || "",
+        openai: "",
+        elevenlabs: "",
+        groq: "",
+        deepgram: "",
+        cartesia: ""
+      };
+    } catch {
+      return { gemini: "", openai: "", elevenlabs: "", groq: "", deepgram: "", cartesia: "" };
+    }
+  });
 
-  interface HistoryItem { id: string, text: string, voice: string, emotion: string, language: string }
-  const [history, setHistory] = useState<HistoryItem[]>([]);
+  interface HistoryItem { id: string, text: string, voice: string, emotion: string, language: string, provider?: string }
+  const [history, setHistory] = useState<HistoryItem[]>(() => {
+    try {
+      const stored = localStorage.getItem("auditextHistory");
+      return stored ? JSON.parse(stored) : [];
+    } catch {
+      return [];
+    }
+  });
+
+  const [deletingId, setDeletingId] = useState<string | "all" | null>(null);
 
   const audioRef = useRef<HTMLAudioElement | null>(null);
   
@@ -111,8 +279,13 @@ export default function Home() {
   }, [darkMode]);
 
   useEffect(() => {
-    localStorage.setItem("auditextCustomApiKey", customApiKey);
-  }, [customApiKey]);
+    localStorage.setItem("auditextApiKeys", JSON.stringify(apiKeys));
+    localStorage.setItem("auditextProvider", provider);
+  }, [apiKeys, provider]);
+
+  useEffect(() => {
+    localStorage.setItem("auditextHistory", JSON.stringify(history));
+  }, [history]);
 
   const stopAudio = useCallback(() => {
     if (audioRef.current) {
@@ -141,7 +314,7 @@ export default function Home() {
       const res = await fetch("/api/tts", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ text, voice, emotion, language, customApiKey }),
+        body: JSON.stringify({ text, voice, emotion, language, provider, apiKeys }),
       });
 
       if (!res.ok) {
@@ -167,7 +340,7 @@ export default function Home() {
       await audio.play();
       setStatus("playing");
       
-      setHistory(prev => [{ id: Date.now().toString(), text, voice, emotion, language }, ...prev].slice(0, 6));
+      setHistory(prev => [{ id: Date.now().toString(), text, voice, emotion, language, provider }, ...prev].slice(0, 6));
 
     } catch (error: any) {
       setStatus("idle");
@@ -210,29 +383,13 @@ export default function Home() {
           </div>
           <h1 className="font-bold text-xl tracking-tight">Auditext</h1>
         </div>
-        
         <div className="flex items-center gap-4">
-          <Popover>
-            <PopoverTrigger render={<Button variant="ghost" size="icon" />}>
-              <Settings className="w-5 h-5" />
-            </PopoverTrigger>
-            <PopoverContent align="end" className="w-80">
-              <div className="space-y-4 pt-2">
-                <div className="space-y-2">
-                  <h4 className="font-medium leading-none">Settings</h4>
-                  <p className="text-sm text-muted-foreground">
-                    Configure your Gemini API Key for TTS. Keys are stored safely in your browser.
-                  </p>
-                </div>
-                <div className="space-y-3 max-h-[300px] overflow-y-auto pr-2 border-t pt-3">
-                  <div className="space-y-1">
-                    <Label htmlFor="apiKey">Gemini API Key</Label>
-                    <Input id="apiKey" type="password" placeholder="AIza..." value={customApiKey} onChange={(e) => setCustomApiKey(e.target.value)} />
-                  </div>
-                </div>
-              </div>
-            </PopoverContent>
-          </Popover>
+          <SettingsPopover 
+            apiKeys={apiKeys} 
+            setApiKeys={setApiKeys} 
+            provider={provider} 
+            setProvider={setProvider} 
+          />
 
           <Button variant="outline" onClick={() => setShowHistory(!showHistory)} className="relative">
             <Clock className="w-4 h-4 mr-2" />
@@ -430,7 +587,14 @@ export default function Home() {
                 </h2>
                 <div className="flex items-center gap-2">
                   {history.length > 0 && (
-                    <Button variant="ghost" size="sm" onClick={() => setHistory([])} className="text-xs">Clear</Button>
+                    deletingId === "all" ? (
+                      <div className="flex items-center gap-1">
+                        <Button variant="destructive" size="sm" onClick={() => { setHistory([]); setDeletingId(null); }} className="text-xs">Yes, Clear</Button>
+                        <Button variant="ghost" size="sm" onClick={() => setDeletingId(null)} className="text-xs px-1 hover:bg-transparent"><X className="w-3 h-3" /></Button>
+                      </div>
+                    ) : (
+                      <Button variant="ghost" size="sm" onClick={() => setDeletingId("all")} className="text-xs text-destructive hover:text-destructive">Clear All</Button>
+                    )
                   )}
                   <Button variant="ghost" size="icon" onClick={() => setShowHistory(false)}>
                     <X className="w-4 h-4" />
@@ -444,11 +608,14 @@ export default function Home() {
                   <div className="space-y-4">
                     {history.map((h, i) => (
                       <div key={h.id} className="p-3 bg-muted/50 rounded-xl border relative group">
-                        <div className="flex gap-2 mb-2">
-                          <Badge variant="secondary" className="text-[10px] capitalize">{h.voice}</Badge>
-                          <Badge variant="outline" className="text-[10px] capitalize">{h.emotion}</Badge>
+                        <div className="flex justify-between items-start mb-2">
+                          <div className="flex gap-2 flex-wrap flex-1 pr-4">
+                            <Badge variant="secondary" className="text-[10px] capitalize">{h.voice}</Badge>
+                            <Badge variant="outline" className="text-[10px] capitalize">{h.emotion}</Badge>
+                            {h.provider && <Badge variant="outline" className="text-[10px] uppercase">{h.provider}</Badge>}
+                          </div>
                         </div>
-                        <p className="text-sm text-foreground/80 line-clamp-3 mb-2">{h.text}</p>
+                        <p className="text-sm text-foreground/80 line-clamp-3 mb-2" title={h.text}>{h.text}</p>
                         <Button 
                           variant="secondary" size="sm" className="w-full text-xs"
                           onClick={() => {
@@ -456,17 +623,31 @@ export default function Home() {
                            setVoice(h.voice);
                            setEmotion(h.emotion);
                            setLanguage(h.language);
+                           if (h.provider) setProvider(h.provider);
                            setShowHistory(false);
                           }}
                         >
                           Restore State
                         </Button>
-                        <button 
-                          onClick={() => setHistory(history.filter(item => item.id !== h.id))}
-                          className="absolute -top-2 -right-2 bg-destructive text-destructive-foreground rounded-full w-5 h-5 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
-                        >
-                          <X className="w-3 h-3" />
-                        </button>
+                        
+                        {deletingId === h.id ? (
+                          <div className="absolute -top-3 -right-2 bg-background border shadow-md rounded-lg p-1 flex items-center gap-1 z-10">
+                            <span className="text-[10px] px-1 font-medium text-destructive">Delete?</span>
+                            <Button size="icon" variant="ghost" className="w-5 h-5 text-destructive rounded-sm" onClick={() => { setHistory(history.filter(item => item.id !== h.id)); setDeletingId(null); }}>
+                              <Check className="w-3 h-3" />
+                            </Button>
+                            <Button size="icon" variant="ghost" className="w-5 h-5 rounded-sm" onClick={() => setDeletingId(null)}>
+                              <X className="w-3 h-3" />
+                            </Button>
+                          </div>
+                        ) : (
+                          <button 
+                            onClick={() => setDeletingId(h.id)}
+                            className="absolute -top-2 -right-2 bg-destructive text-destructive-foreground rounded-full w-5 h-5 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                          >
+                            <X className="w-3 h-3" />
+                          </button>
+                        )}
                       </div>
                     ))}
                   </div>
