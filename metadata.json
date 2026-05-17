@@ -1,0 +1,6 @@
+{
+  "name": "Auditext",
+  "description": "A polished AI text-to-speech app generating emotional voice audio",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
