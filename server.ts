@@ -48,101 +48,104 @@ const ELEVENLABS_VOICES: Record<string, string> = {
   "shimmer": "AZnzlk1XvdvUeBnXmlld" // Domi
 };
 
-export const app = express();
-app.use(express.json());
+async function startServer() {
+  const app = express();
+  const PORT = 3000;
 
-// API routes FIRST
-app.get("/api/healthz", (req, res) => {
-  res.json({ status: "ok" });
-});
+  app.use(express.json());
 
-app.post("/api/verify-key", async (req, res) => {
-  try {
-    const { provider, apiKey } = req.body;
-    if (!apiKey || apiKey.trim() === "") {
-      res.status(400).json({ valid: false, error: "API key is empty" });
-      return;
-    }
+  // API routes FIRST
+  app.get("/api/healthz", (req, res) => {
+    res.json({ status: "ok" });
+  });
 
-    const key = apiKey.trim();
-
-    if (provider === "openai") {
-      const response = await fetch("https://api.openai.com/v1/models", {
-        headers: { "Authorization": `Bearer ${key}` }
-      });
-      if (response.ok) {
-        res.json({ valid: true });
-      } else {
-        res.status(400).json({ valid: false, error: "Invalid OpenAI API Key" });
+  app.post("/api/verify-key", async (req, res) => {
+    try {
+      const { provider, apiKey } = req.body;
+      if (!apiKey || apiKey.trim() === "") {
+        res.status(400).json({ valid: false, error: "API key is empty" });
+        return;
       }
-      return;
-    }
 
-    if (provider === "elevenlabs") {
-      const response = await fetch("https://api.elevenlabs.io/v1/voices", {
-        headers: { "xi-api-key": key }
-      });
-      if (response.ok) {
-        res.json({ valid: true });
-      } else {
-        res.status(400).json({ valid: false, error: "Invalid ElevenLabs API Key" });
+      const key = apiKey.trim();
+
+      if (provider === "openai") {
+        const response = await fetch("https://api.openai.com/v1/models", {
+          headers: { "Authorization": `Bearer ${key}` }
+        });
+        if (response.ok) {
+          res.json({ valid: true });
+        } else {
+          res.status(400).json({ valid: false, error: "Invalid OpenAI API Key" });
+        }
+        return;
       }
-      return;
-    }
 
-    if (provider === "groq") {
-      const response = await fetch("https://api.groq.com/openai/v1/models", {
-        headers: { "Authorization": `Bearer ${key}` }
-      });
-      if (response.ok) {
-        res.json({ valid: true });
-      } else {
-        res.status(400).json({ valid: false, error: "Invalid Groq API Key" });
+      if (provider === "elevenlabs") {
+        const response = await fetch("https://api.elevenlabs.io/v1/voices", {
+          headers: { "xi-api-key": key }
+        });
+        if (response.ok) {
+          res.json({ valid: true });
+        } else {
+          res.status(400).json({ valid: false, error: "Invalid ElevenLabs API Key" });
+        }
+        return;
       }
-      return;
-    }
 
-    if (provider === "deepgram") {
-      const response = await fetch("https://api.deepgram.com/v1/projects", {
-        headers: { "Authorization": `Token ${key}` }
-      });
-      if (response.ok) {
-        res.json({ valid: true });
-      } else {
-        res.status(400).json({ valid: false, error: "Invalid Deepgram API Key" });
+      if (provider === "groq") {
+        const response = await fetch("https://api.groq.com/openai/v1/models", {
+          headers: { "Authorization": `Bearer ${key}` }
+        });
+        if (response.ok) {
+          res.json({ valid: true });
+        } else {
+          res.status(400).json({ valid: false, error: "Invalid Groq API Key" });
+        }
+        return;
       }
-      return;
-    }
 
-    if (provider === "cartesia") {
-      const response = await fetch("https://api.cartesia.ai/voices", {
-        headers: { "X-API-Key": key, "Cartesia-Version": "2024-06-10" }
-      });
-      if (response.ok) {
-        res.json({ valid: true });
-      } else {
-        res.status(400).json({ valid: false, error: "Invalid Cartesia API Key" });
+      if (provider === "deepgram") {
+        const response = await fetch("https://api.deepgram.com/v1/projects", {
+          headers: { "Authorization": `Token ${key}` }
+        });
+        if (response.ok) {
+          res.json({ valid: true });
+        } else {
+          res.status(400).json({ valid: false, error: "Invalid Deepgram API Key" });
+        }
+        return;
       }
-      return;
-    }
 
-    if (provider === "gemini") {
-      const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${key}`);
-      if (response.ok) {
-        res.json({ valid: true });
-      } else {
-        res.status(400).json({ valid: false, error: "Invalid Gemini API Key" });
+      if (provider === "cartesia") {
+        const response = await fetch("https://api.cartesia.ai/voices", {
+          headers: { "X-API-Key": key, "Cartesia-Version": "2024-06-10" }
+        });
+        if (response.ok) {
+          res.json({ valid: true });
+        } else {
+          res.status(400).json({ valid: false, error: "Invalid Cartesia API Key" });
+        }
+        return;
       }
-      return;
+
+      if (provider === "gemini") {
+        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${key}`);
+        if (response.ok) {
+          res.json({ valid: true });
+        } else {
+          res.status(400).json({ valid: false, error: "Invalid Gemini API Key" });
+        }
+        return;
+      }
+
+      res.status(400).json({ valid: false, error: "Unknown provider" });
+    } catch (error: any) {
+      res.status(500).json({ valid: false, error: error.message });
     }
+  });
 
-    res.status(400).json({ valid: false, error: "Unknown provider" });
-  } catch (error: any) {
-    res.status(500).json({ valid: false, error: error.message });
-  }
-});
-
-app.post("/api/tts", async (req, res) => {
+  app.post("/api/tts", async (req, res) => {
     try {
       const { text, voice = "nova", emotion = "neutral", provider = "gemini", apiKeys = {} } = req.body;
       
@@ -455,13 +458,12 @@ app.post("/api/tts", async (req, res) => {
         res.status(429).json({ error: "Gemini API quota exceeded. Please configure your own Gemini API key in Settings (top right)." });
       } else {
         res.status(500).json({ error: "Failed to generate speech: " + (error.message || "Unknown error") });
+      }
     }
-  }
-});
+  });
 
-// Vite middleware for development
-async function setupVite() {
-  if (process.env.NODE_ENV !== "production" && !process.env.VERCEL) {
+  // Vite middleware for development
+  if (process.env.NODE_ENV !== "production") {
     const vite = await createViteServer({
       server: { middlewareMode: true },
       appType: "spa",
@@ -470,30 +472,15 @@ async function setupVite() {
   } else {
     const distPath = path.join(process.cwd(), 'dist');
     app.use(express.static(distPath));
-    
-    // Explicitly handle 404 for API routes to avoid returning index.html (causing JSON parse errors)
-    app.all('/api/*', (req, res) => {
-      res.status(404).json({ error: "API route not found" });
-    });
-
-    // Support client-side routing for SPA
+    // Support client-side routing
     app.get('*', (req, res) => {
       res.sendFile(path.join(distPath, 'index.html'));
     });
   }
-}
 
-setupVite();
-
-async function startServer() {
-  const PORT = Number(process.env.PORT) || 3000;
-
-  // Only listen if not running on Vercel as a serverless function
-  if (!process.env.VERCEL) {
-    app.listen(PORT, "0.0.0.0", () => {
-      console.log(`Server running on http://localhost:${PORT}`);
-    });
-  }
+  app.listen(PORT, "0.0.0.0", () => {
+    console.log(`Server running on http://localhost:${PORT}`);
+  });
 }
 
 startServer();
