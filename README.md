@@ -154,7 +154,21 @@ flowchart LR
 
 ---
 
-## 🚀 Getting Started
+## ☁️ Deployment
+
+Auditext can be deployed on platforms like Vercel or Render.
+
+### Prerequisites
+1. Ensure your `.env` file is configured with the necessary API keys (`GEMINI_API_KEY`, etc.).
+2. You have a Firebase project set up for Authentication and Firestore.
+
+### Vercel / Render Deployment
+1. Import the repository.
+2. Ensure the environment variables are set in the deployment dashboard.
+3. For Render, use the `npm run build` build command and `npm start` start command.
+
+---
+
 
 ### 1. Installation
 ```bash
