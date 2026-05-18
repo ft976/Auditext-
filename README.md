@@ -3,16 +3,18 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Build Status](https://img.shields.io/badge/build-passing-brightgreen.svg)]()
 [![Author: Rehan Ahmad](https://img.shields.io/badge/Author-Rehan%20Ahmad-blue.svg)](mailto:rehan515ahmad@gmail.com)
-[![Tech: React 19](https://img.shields.io/badge/Tech-React%2019-61dafb.svg)]()
-[![Style: Tailwind 4](https://img.shields.io/badge/Style-Tailwind%204-38bdf8.svg)]()
+[![Tech: React](https://img.shields.io/badge/Tech-React-61dafb.svg)]()
+[![Style: Tailwind](https://img.shields.io/badge/Style-Tailwind-38bdf8.svg)]()
 
 Auditext is a professional-grade Text-to-Speech (TTS) studio that bridges the gap between various industry-leading AI voice providers into a single, unified interface. It empowers creators to synthesize high-fidelity audio using models from Google Gemini, OpenAI, ElevenLabs, Deepgram, and Cartesia.
 
-### 4. Google Authentication & Cloud Sync
-Auditext supports Google Authentication to provide a seamless cross-device experience.
-- **Profile Persistence:** Your user profile is synced to Firestore.
-- **History Sync:** Your generation history is stored securely in your private Firestore collection, allowing you to access your previous work from any authenticated session.
-- **Privacy First:** We only store your public profile info and the session history you explicitly generate. Your API keys remain strictly local to your browser.
+## 🔑 Authentication & Cloud Sync
+
+Auditext supports Google Authentication to provide a seamless cross-device experience:
+
+*   **Profile Persistence:** Your user profile is synced securely to Firestore.
+*   **History Sync:** Generation history is stored securely in your private Firestore collection, allowing access to previous work from any authenticated session.
+*   **Privacy First:** We exclusively store your public profile info and the session history you explicitly generate. Your sensitive API keys remain stored locally in your browser.
 
 ---
 
@@ -62,28 +64,27 @@ graph TD
 ## 🧠 Core Concepts
 
 ### 1. Provider Abstraction Layer
-Auditext abstracts the complex differences between various TTS providers (OpenAI, ElevenLabs, etc.) into a unified set of voice profiles. While OpenAI uses `nova`, `alloy`, and `shimmer`, Gemini uses `Kore` and `Zephyr`. Auditext's backend handles this mapping transparently, allowing the user to switch providers without losing their voice selection context.
+Auditext abstracts complex differences between various TTS providers (OpenAI, ElevenLabs, etc.) into a unified set of voice profiles. Auditext's backend handles mapping transparently, allowing the user to switch providers without losing their voice selection context.
 
 ### 2. Audio Header Reconstruction (PCM to WAV)
-Most high-performance TTS APIs (like Cartesia or ElevenLabs) return **Raw PCM data** to reduce latency. Raw PCM cannot be played directly by most modern browsers. 
-Auditext implements a **RIFF/WAV Header Constructor** on the server. Whenever raw audio is received, the server calculates:
-- Sample Rate (e.g., 16000Hz or 24000Hz)
-- Bit Depth (16-bit)
-- Channel Count (Mono)
-It then prepends the 44-byte WAV header dynamically before streaming it back to the frontend.
+Most high-performance TTS APIs return **Raw PCM data** to reduce latency. Auditext implements a **RIFF/WAV Header Constructor** on the server. Whenever raw audio is received, the server calculates:
+*   Sample Rate (e.g., 16000Hz or 24000Hz)
+*   Bit Depth (16-bit)
+*   Channel Count (Mono)
+It then dynamically prepends the 44-byte WAV header before streaming it back to the frontend.
 
 ### 3. Secure Client-Side Key Management
-Auditext utilizes a "Bring Your Own Key" (BYOK) model. To ensure security:
-- Keys are never stored on the app's database.
-- They are stored in the user's browser via **encrypted LocalStorage**.
-- Keys are only sent to the server over HTTPS during active requests and are held only in volatile memory during the transaction.
+Auditext utilizes a "Bring Your Own Key" (BYOK) model for security:
+*   Keys are never stored on our database.
+*   Keys are stored in the user's browser via encrypted LocalStorage.
+*   Keys are sent to the server over HTTPS during active requests only and are held in volatile memory.
 
 ---
 
 ## 🔄 Business Logic Flows
 
 ### TTS Request Lifecycle
-This flowchart details how a single "Speak" action travels through the system.
+This flowchart traces a "Speak" action through the system.
 
 ```mermaid
 sequenceDiagram
@@ -111,82 +112,41 @@ sequenceDiagram
     Frontend->>Frontend: Save to Local History
 ```
 
-### Provider Verification Flow
-Auditext ensures that API keys are valid before attempting expensive generation requests.
-
-```mermaid
-flowchart LR
-    Start([User Saves Key]) --> CheckEmpty{Key Empty?}
-    CheckEmpty -- Yes --> ClearStorage[Clear Provider Key]
-    CheckEmpty -- No --> CallVerify[API /verify-key]
-    
-    subgraph Server Verification
-    CallVerify --> AuthHeader[Build Provider Header]
-    AuthHeader --> PingAPI[Ping Model List Endpoint]
-    PingAPI --> IsSuccess{API Response 200?}
-    end
-    
-    IsSuccess -- No --> ErrorUI[Show Invalid Key Error]
-    IsSuccess -- Yes --> SaveUI[Mark as Verified & Save]
-```
-
----
-
-## ✨ Key Features in Detail
-
-| Feature | Description |
-| :--- | :--- |
-| **Emotion Morphing** | Maps high-level emotions (Happy, Angry, Whispering) to specific system instructions or provider-specific parameters. |
-| **Waveform Visualization** | A real-time CSS-animated waveform synced with the playing state of the audio engine. |
-| **Session Persistence** | Automatic saving of your last 10 generations, including the text and specific settings used. |
-| **Provider Hot-Swapping** | Change the underlying AI engine (e.g., from Gemini to ElevenLabs) with a single click. |
-| **Intelligent Speed Scaling** | Adjust playback rate (0.5x to 2.0x) on the fly without re-generating audio. |
-
 ---
 
 ## 🛠️ Technology Stack
 
-- **Frontend:** React 19, Vite, Tailwind CSS 4.0, Motion (React Animation)
-- **Backend:** Node.js, Express
-- **Icons:** Lucide React
-- **Theming:** Shadcn/UI (Adapted components), Next-Themes (Dark/Light Mode)
-- **Visualization:** CSS Custom Properties + Mermaid.js (Architecture)
+*   **Frontend:** React, Vite, Tailwind CSS, Motion (React Animation)
+*   **Backend:** Node.js, Express
+*   **Database & Auth:** Google Firebase (Firestore & Auth)
+*   **Icons:** Lucide React
+*   **Theming:** Shadcn/UI (Adapted components), Next-Themes (Dark/Light Mode)
 
 ---
 
-## ☁️ Deployment
-
-Auditext can be deployed on platforms like Vercel or Render.
+## 🚀 Getting Started
 
 ### Prerequisites
 1. Ensure your `.env` file is configured with the necessary API keys (`GEMINI_API_KEY`, etc.).
-2. You have a Firebase project set up for Authentication and Firestore.
+2. A Firebase project must be set up for Authentication and Firestore.
 
-### Vercel / Render Deployment
-1. Import the repository.
-2. Ensure the environment variables are set in the deployment dashboard.
-3. For Render, use the `npm run build` build command and `npm start` start command.
-
----
-
-
-### 1. Installation
+### Installation
 ```bash
 npm install
 ```
 
-### 2. Environment Configuration
-Create a `.env` file in the root:
+### Environment Configuration
+Create a `.env` file in the root directory:
 ```env
-GEMINI_API_KEY=your_default_key_here
+GEMINI_API_KEY=your_key_here
 ```
 
-### 3. Running Development
+### Running Development
 ```bash
 npm run dev
 ```
 
-### 4. Build for Production
+### Production Build
 ```bash
 npm run build
 npm start
@@ -194,20 +154,8 @@ npm start
 
 ---
 
-## 📜 Core Concept Deep Dive: Emotion System Prompts
-
-Auditext uses a structured **Prompt Engineering System** for providers that don't native support "emotions" (like Gemini). When you select "Whispering", Auditext sends the following hidden instruction:
-
-> *"You are a professional voice actor. Read the text very softly and intimately, as if whispering a secret close to someone's ear — hushed, slow, private."*
-
-This ensures consistent emotional output across different models that might not have built-in "emotion" tags.
-
----
-
 ## 📄 License
-
 This project is licensed under the **MIT License**.
-
 Copyright © 2026 **Rehan Ahmad**.
 See the [LICENSE](./LICENSE) file for details.
 

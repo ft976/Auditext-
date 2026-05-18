@@ -486,6 +486,14 @@ export default function Home() {
     }
   };
   
+  const handleSpeedAdjust = (delta: number) => {
+    const newSpeed = Math.max(0.5, Math.min(2.0, speed + delta));
+    setSpeed(newSpeed);
+    if (audioRef.current && status === "playing") {
+      audioRef.current.playbackRate = newSpeed;
+    }
+  };
+  
   const handleSpeedChange = (val: number[]) => {
     setSpeed(val[0]);
     if (audioRef.current && status === "playing") {
@@ -707,16 +715,34 @@ export default function Home() {
               </div>
             )}
 
-            <div className="flex-1 px-4 w-full">
-              <div className="flex justify-between text-xs mb-2">
-                <span className="text-muted-foreground">Speed</span>
-                <span className="font-medium">{speed.toFixed(2)}x</span>
+            <div className="flex-1 px-4 w-full flex items-center gap-2">
+              <Button 
+                variant="outline" 
+                size="icon" 
+                className="h-8 w-8"
+                onClick={() => handleSpeedAdjust(-0.1)}
+              >
+                -
+              </Button>
+              <div className="flex-1">
+                <div className="flex justify-between text-xs mb-2">
+                  <span className="text-muted-foreground">Speed</span>
+                  <span className="font-medium">{(speed || 1.0).toFixed(2)}x</span>
+                </div>
+                <Slider
+                  value={[isNaN(speed) ? 1.0 : speed]}
+                  min={0.5} max={2.0} step={0.05}
+                  onValueChange={handleSpeedChange}
+                />
               </div>
-              <Slider
-                value={[speed]}
-                min={0.5} max={2.0} step={0.05}
-                onValueChange={handleSpeedChange}
-              />
+              <Button 
+                variant="outline" 
+                size="icon" 
+                className="h-8 w-8"
+                onClick={() => handleSpeedAdjust(0.1)}
+              >
+                +
+              </Button>
             </div>
 
             {downloadUrl && (

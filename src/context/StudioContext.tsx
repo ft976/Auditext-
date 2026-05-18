@@ -20,14 +20,18 @@ export function StudioProvider({ children }: { children: React.ReactNode }) {
   const [language, setLanguage] = useState(() => localStorage.getItem("auditextLanguage") || "English");
   const [voice, setVoice] = useState(() => localStorage.getItem("auditextVoice") || "nova");
   const [emotion, setEmotion] = useState(() => localStorage.getItem("auditextEmotion") || "neutral");
-  const [speed, setSpeed] = useState(() => parseFloat(localStorage.getItem("auditextSpeed") || "1.0"));
+  const [speed, setSpeed] = useState(() => {
+    const stored = localStorage.getItem("auditextSpeed");
+    const parsed = parseFloat(stored || "1.0");
+    return isNaN(parsed) ? 1.0 : parsed;
+  });
 
   useEffect(() => {
     localStorage.setItem("auditextText", text);
     localStorage.setItem("auditextLanguage", language);
     localStorage.setItem("auditextVoice", voice);
     localStorage.setItem("auditextEmotion", emotion);
-    localStorage.setItem("auditextSpeed", speed.toString());
+    localStorage.setItem("auditextSpeed", (speed ?? 1.0).toString());
   }, [text, language, voice, emotion, speed]);
 
   return (
