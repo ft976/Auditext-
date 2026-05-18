@@ -5,7 +5,7 @@ import {
   signOut, 
   User 
 } from "firebase/auth";
-import { auth, googleProvider } from "@/lib/firebase";
+import { auth, googleProvider } from "../lib/firebase";
 
 interface AuthContextType {
   user: User | null;
@@ -59,7 +59,7 @@ export const useAuth = () => {
   return context;
 };
 
-// Firestore Error Helper as per Guidelines
+// Firestore Error Helper
 export enum OperationType {
   CREATE = 'create',
   UPDATE = 'update',

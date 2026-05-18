@@ -14,7 +14,7 @@ import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from "@/comp
 import { cn } from "@/lib/utils";
 import { useStudio } from "../context/StudioContext";
 import { useAuth, OperationType, handleFirestoreError } from "../context/AuthContext";
-import { db } from "@/lib/firebase";
+import { db } from "../lib/firebase";
 import { collection, addDoc, query, orderBy, limit, onSnapshot, serverTimestamp, setDoc, doc, getDoc, deleteDoc, getDocs, writeBatch } from "firebase/firestore";
 
 const LANGUAGES = ["English", "Spanish", "French", "German", "Italian", "Japanese", "Korean", "Portuguese", "Chinese"];
@@ -345,8 +345,8 @@ export default function Home() {
           setDoc(userRef, {
             uid: user.uid,
             email: user.email,
-            displayName: user.displayName,
-            photoURL: user.photoURL,
+            displayName: user?.displayName,
+            photoURL: user?.photoURL,
             createdAt: serverTimestamp(),
             updatedAt: serverTimestamp(),
           }).catch(e => handleFirestoreError(e, OperationType.WRITE, `users/${user.uid}`));
@@ -371,7 +371,6 @@ export default function Home() {
 
       return () => unsubscribe();
     } else {
-      // Load from localStorage if not logged in
       try {
         const stored = localStorage.getItem("auditextHistory");
         setHistory(stored ? JSON.parse(stored) : []);
@@ -433,6 +432,8 @@ export default function Home() {
       }
 
       const blob = await res.blob();
+      console.log("Blob type:", blob.type, "size:", blob.size);
+      if (blob.size === 0) throw new Error("Received empty audio blob");
       const url = URL.createObjectURL(blob);
       setDownloadUrl(url);
       setDownloadName(`voicestudio_${voice}_${emotion}.wav`);
@@ -441,10 +442,16 @@ export default function Home() {
       audio.playbackRate = speed;
       audioRef.current = audio;
       
+      await new Promise((resolve, reject) => {
+        audio.onloadedmetadata = resolve;
+        audio.onerror = (e: any) => reject(new Error("Audio load error: " + (audio.error?.message || "Unknown")));
+      });
+
       audio.onended = () => setStatus("idle");
-      audio.onerror = () => {
+      audio.onerror = (e: any) => {
         setStatus("idle");
-        setErrorMsg("Audio playback error");
+        const details = audio.error ? `Code: ${audio.error.code}, Message: ${audio.error.message}` : "Unknown error";
+        setErrorMsg(`Audio playback error: ${details}`);
       };
 
       await audio.play();
