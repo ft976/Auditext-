@@ -8,6 +8,12 @@
 
 Auditext is a professional-grade Text-to-Speech (TTS) studio that bridges the gap between various industry-leading AI voice providers into a single, unified interface. It empowers creators to synthesize high-fidelity audio using models from Google Gemini, OpenAI, ElevenLabs, Deepgram, and Cartesia.
 
+### 4. Google Authentication & Cloud Sync
+Auditext supports Google Authentication to provide a seamless cross-device experience.
+- **Profile Persistence:** Your user profile is synced to Firestore.
+- **History Sync:** Your generation history is stored securely in your private Firestore collection, allowing you to access your previous work from any authenticated session.
+- **Privacy First:** We only store your public profile info and the session history you explicitly generate. Your API keys remain strictly local to your browser.
+
 ---
 
 ## 🏗️ System Architecture

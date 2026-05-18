@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import { Link } from "react-router-dom";
 import { motion, AnimatePresence } from "motion/react";
-import { Play, Square, Download, Moon, Sun, Clock, Languages, ChevronDown, Check, X, Settings, AudioLines } from "lucide-react";
+import { Play, Square, Download, Moon, Sun, Clock, Languages, ChevronDown, Check, X, Settings, AudioLines, LogIn, LogOut, User as UserIcon, ShieldCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
@@ -12,6 +12,10 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
+import { useStudio } from "../context/StudioContext";
+import { useAuth, OperationType, handleFirestoreError } from "../context/AuthContext";
+import { db } from "@/lib/firebase";
+import { collection, addDoc, query, orderBy, limit, onSnapshot, serverTimestamp, setDoc, doc, getDoc, deleteDoc, getDocs, writeBatch } from "firebase/firestore";
 
 const LANGUAGES = ["English", "Spanish", "French", "German", "Italian", "Japanese", "Korean", "Portuguese", "Chinese"];
 const VOICES = [
@@ -88,16 +92,16 @@ function WaveformBars({ active }: { active: boolean }) {
   );
 }
 
-function SettingsPopover({ apiKeys, setApiKeys, provider, setProvider }: { apiKeys: any, setApiKeys: any, provider: string, setProvider: any }) {
+function SettingsPopover({ apiKeys, setApiKeys, provider, setProvider, user, login, logout }: { apiKeys: any, setApiKeys: any, provider: string, setProvider: any, user: any, login: any, logout: any }) {
   const [draftKeys, setDraftKeys] = useState(apiKeys);
   const [isVerifying, setIsVerifying] = useState<Record<string, boolean>>({});
   const [verifyStatus, setVerifyStatus] = useState<Record<string, "idle" | "success" | "error">>({});
   const [verifyMessage, setVerifyMessage] = useState<Record<string, string>>({});
+  const [isAuthOpen, setIsAuthOpen] = useState(false);
 
   const handleVerifyAndSave = async (providerName: string) => {
     const key = draftKeys[providerName as keyof typeof draftKeys] as string;
     if (!key) {
-      // If empty, just save it (removes the key)
       const newKeys = { ...apiKeys, [providerName]: "" };
       setApiKeys(newKeys);
       setVerifyStatus({ ...verifyStatus, [providerName]: "idle" });
@@ -117,13 +121,7 @@ function SettingsPopover({ apiKeys, setApiKeys, provider, setProvider }: { apiKe
       });
 
       if (!res.ok) {
-        const contentType = res.headers.get("Content-Type");
-        if (contentType && contentType.includes("application/json")) {
-          const err = await res.json();
-          throw new Error(err.error || "Failed to verify key");
-        } else {
-          throw new Error(`Verification failed with status: ${res.status}`);
-        }
+        throw new Error(`Verification failed with status: ${res.status}`);
       }
 
       const data = await res.json();
@@ -151,13 +149,41 @@ function SettingsPopover({ apiKeys, setApiKeys, provider, setProvider }: { apiKe
       </PopoverTrigger>
       <PopoverContent align="end" className="w-80">
         <div className="space-y-4 pt-2">
-          <div className="space-y-2 border-t pt-3">
-            <h4 className="font-medium leading-none">Settings</h4>
+          {/* Authentication Section */}
+          <div className="space-y-3 pb-3 border-b">
+            <h4 className="font-semibold leading-none text-foreground">Account</h4>
+            {user ? (
+                <div className="space-y-3">
+                  <div className="flex items-center gap-3">
+                    {user.photoURL ? (
+                      <img src={user.photoURL} alt={user.displayName || "User"} referrerPolicy="no-referrer" className="w-8 h-8 rounded-full" />
+                    ) : (
+                      <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary">
+                        <UserIcon className="w-4 h-4" />
+                      </div>
+                    )}
+                    <div className="text-sm truncate font-medium">{user.email}</div>
+                  </div>
+                  <Button variant="outline" size="sm" onClick={logout} className="w-full justify-start gap-2 text-destructive hover:text-destructive hover:bg-destructive/10">
+                    <LogOut className="w-4 h-4" />
+                    Logout
+                  </Button>
+                </div>
+            ) : (
+                <Button variant="default" size="sm" onClick={login} className="w-full justify-start gap-2">
+                  <LogIn className="w-4 h-4" />
+                  Login with Google
+                </Button>
+            )}
+          </div>
+          
+          <div className="space-y-2 pt-1">
+            <h4 className="font-semibold leading-none">Settings</h4>
             <p className="text-sm text-muted-foreground">
               Configure your AI API Keys. Keys are stored safely in your browser.
             </p>
           </div>
-          <div className="space-y-4 max-h-[400px] overflow-y-auto pr-2 border-t pt-3 pb-2">
+          <div className="space-y-4 max-h-[300px] overflow-y-auto pr-2 border-t pt-3 pb-2">
             <div className="space-y-2 pb-3 border-b">
               <Label className="font-semibold text-foreground">Active AI Provider</Label>
               <div className="grid grid-cols-2 gap-2">
@@ -243,11 +269,8 @@ function SettingsPopover({ apiKeys, setApiKeys, provider, setProvider }: { apiKe
 }
 
 export default function Home() {
-  const [text, setText] = useState("");
-  const [language, setLanguage] = useState("English");
-  const [voice, setVoice] = useState("nova");
-  const [emotion, setEmotion] = useState("neutral");
-  const [speed, setSpeed] = useState(1.0);
+  const { user, login, logout, loading: authLoading } = useAuth();
+  const { text, setText, language, setLanguage, voice, setVoice, emotion, setEmotion, speed, setSpeed } = useStudio();
   const [status, setStatus] = useState<"idle" | "loading" | "playing" | "paused">("idle");
   const [darkMode, setDarkMode] = useState(() => {
     const saved = localStorage.getItem("auditextDarkMode");
@@ -286,8 +309,77 @@ export default function Home() {
   });
 
   const [deletingId, setDeletingId] = useState<string | "all" | null>(null);
-
   const audioRef = useRef<HTMLAudioElement | null>(null);
+
+  const handleClearHistory = async () => {
+    if (user) {
+      const historyRef = collection(db, "users", user.uid, "history");
+      const snapshot = await getDocs(historyRef);
+      const batch = writeBatch(db);
+      snapshot.docs.forEach((doc) => batch.delete(doc.ref));
+      await batch.commit().catch(e => handleFirestoreError(e, OperationType.DELETE, `users/${user.uid}/history`));
+    } else {
+      setHistory([]);
+      localStorage.removeItem("auditextHistory");
+    }
+    setDeletingId(null);
+  };
+
+  const handleDeleteItem = async (id: string) => {
+    if (user) {
+      await deleteDoc(doc(db, "users", user.uid, "history", id)).catch(e => handleFirestoreError(e, OperationType.DELETE, `users/${user.uid}/history/${id}`));
+    } else {
+      const newHistory = history.filter(item => item.id !== id);
+      setHistory(newHistory);
+      localStorage.setItem("auditextHistory", JSON.stringify(newHistory));
+    }
+    setDeletingId(null);
+  };
+
+  // Sync user profile to Firestore
+  useEffect(() => {
+    if (user) {
+      const userRef = doc(db, "users", user.uid);
+      getDoc(userRef).then((docSnap) => {
+        if (!docSnap.exists()) {
+          setDoc(userRef, {
+            uid: user.uid,
+            email: user.email,
+            displayName: user.displayName,
+            photoURL: user.photoURL,
+            createdAt: serverTimestamp(),
+            updatedAt: serverTimestamp(),
+          }).catch(e => handleFirestoreError(e, OperationType.WRITE, `users/${user.uid}`));
+        }
+      });
+    }
+  }, [user]);
+
+  // Real-time history from Firestore
+  useEffect(() => {
+    if (user) {
+      const historyRef = collection(db, "users", user.uid, "history");
+      const q = query(historyRef, orderBy("createdAt", "desc"), limit(10));
+      
+      const unsubscribe = onSnapshot(q, (snapshot) => {
+        const items = snapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data()
+        })) as HistoryItem[];
+        setHistory(items);
+      }, (err) => handleFirestoreError(err, OperationType.LIST, `users/${user.uid}/history`));
+
+      return () => unsubscribe();
+    } else {
+      // Load from localStorage if not logged in
+      try {
+        const stored = localStorage.getItem("auditextHistory");
+        setHistory(stored ? JSON.parse(stored) : []);
+      } catch {
+        setHistory([]);
+      }
+    }
+  }, [user]);
   
   useEffect(() => {
     document.documentElement.classList.toggle("dark", darkMode);
@@ -299,9 +391,6 @@ export default function Home() {
     localStorage.setItem("auditextProvider", provider);
   }, [apiKeys, provider]);
 
-  useEffect(() => {
-    localStorage.setItem("auditextHistory", JSON.stringify(history));
-  }, [history]);
 
   const stopAudio = useCallback(() => {
     if (audioRef.current) {
@@ -363,6 +452,19 @@ export default function Home() {
       
       setHistory(prev => [{ id: Date.now().toString(), text, voice, emotion, language, provider }, ...prev].slice(0, 6));
 
+      // Save to Firestore if logged in
+      if (user) {
+        const historyRef = collection(db, "users", user.uid, "history");
+        addDoc(historyRef, {
+          text,
+          voice,
+          emotion,
+          language,
+          provider,
+          createdAt: serverTimestamp()
+        }).catch(e => handleFirestoreError(e, OperationType.CREATE, `users/${user.uid}/history`));
+      }
+
     } catch (error: any) {
       setStatus("idle");
       setErrorMsg(error.message || "Something went wrong.");
@@ -395,8 +497,25 @@ export default function Home() {
     }
   };
 
+  if (authLoading) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center bg-background">
+        <motion.div 
+          initial={{ opacity: 0, scale: 0.9 }}
+          animate={{ opacity: 1, scale: 1 }}
+          className="flex flex-col items-center gap-4"
+        >
+          <div className="w-16 h-16 rounded-2xl bg-primary flex items-center justify-center text-primary-foreground shadow-2xl shadow-primary/20">
+            <AudioLines className="w-10 h-10 animate-pulse" />
+          </div>
+          <p className="text-sm font-medium text-muted-foreground animate-pulse">Initializing Studio...</p>
+        </motion.div>
+      </div>
+    );
+  }
+
   const renderHeader = () => (
-    <header className="sticky top-0 z-10 backdrop-blur-md bg-background/80 border-b">
+    <header className="sticky top-0 z-40 backdrop-blur-md bg-background/80 border-b">
       <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
         <div className="flex items-center gap-2">
           <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center text-primary-foreground">
@@ -410,6 +529,9 @@ export default function Home() {
             setApiKeys={setApiKeys} 
             provider={provider} 
             setProvider={setProvider} 
+            user={user}
+            login={login}
+            logout={logout}
           />
 
           <Button variant="outline" onClick={() => setShowHistory(!showHistory)} className="relative">
@@ -427,6 +549,74 @@ export default function Home() {
       </div>
     </header>
   );
+
+  if (!user) {
+    return (
+      <div className="min-h-screen bg-background flex flex-col transition-colors duration-300">
+        <header className="fixed top-0 w-full z-50 bg-background/80 backdrop-blur-md border-b">
+          <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center text-primary-foreground">
+                <AudioLines className="w-5 h-5" />
+              </div>
+              <h1 className="font-bold text-xl tracking-tight">Auditext</h1>
+            </div>
+            <Button variant="ghost" size="icon" onClick={() => setDarkMode(!darkMode)} className="rounded-full">
+              {darkMode ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
+            </Button>
+          </div>
+        </header>
+
+        <main className="flex-1 flex flex-col items-center justify-center px-6 pt-20">
+          <motion.div 
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="w-full max-w-md text-center space-y-8"
+          >
+            <div className="space-y-4">
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 text-primary text-xs font-bold uppercase tracking-wider">
+                <ShieldCheck className="w-3 h-3" /> Secure Access
+              </div>
+              <h2 className="text-4xl font-extrabold tracking-tight">Welcome to the Studio</h2>
+              <p className="text-muted-foreground text-lg">
+                Where words find their voice. Sign in to start creating human-like AI audio.
+              </p>
+            </div>
+
+            <Button size="lg" className="w-full h-14 text-lg rounded-2xl shadow-lg shadow-primary/10 gap-3" onClick={login}>
+              <LogIn className="w-5 h-5" />
+              Sign in with Google
+            </Button>
+
+            <div className="pt-8 grid grid-cols-2 gap-4">
+               <div className="p-4 rounded-2xl bg-muted/50 border text-left">
+                  <p className="text-xs font-bold text-primary mb-1 uppercase">Privacy First</p>
+                  <p className="text-xs text-muted-foreground">Your API keys stay in your browser. We never see them.</p>
+               </div>
+               <div className="p-4 rounded-2xl bg-muted/50 border text-left">
+                  <p className="text-xs font-bold text-primary mb-1 uppercase">Cloud Sync</p>
+                  <p className="text-xs text-muted-foreground">Access your history from any device instantly.</p>
+               </div>
+            </div>
+          </motion.div>
+        </main>
+
+        <footer className="py-8 bg-background border-t">
+          <div className="max-w-7xl mx-auto px-6 flex flex-col md:flex-row items-center justify-between gap-4 text-xs text-muted-foreground">
+             <div className="flex items-center gap-2 group">
+                <span className="w-5 h-5 rounded bg-primary flex items-center justify-center text-white text-[8px] font-bold transition-transform group-hover:scale-110">RA</span>
+                <p>© 2026 Auditext. Crafted with ❤️ by Rehan Ahmad</p>
+             </div>
+             <div className="flex gap-6">
+                <Link to="/docs" className="hover:text-primary transition-colors">Documentation</Link>
+                <Link to="/privacy" className="hover:text-primary transition-colors">Privacy</Link>
+                <a href="https://www.linkedin.com/in/rehan-ahmad-863386382" target="_blank" rel="noopener noreferrer" className="hover:text-primary transition-colors">LinkedIn</a>
+             </div>
+          </div>
+        </footer>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background text-foreground transition-colors pb-12">
@@ -591,9 +781,9 @@ export default function Home() {
       
       <footer className="max-w-7xl mx-auto px-6 pt-16 pb-8">
         <div className="border-t pt-8 flex flex-col md:flex-row items-center justify-between gap-4 text-sm text-muted-foreground font-medium">
-          <div className="flex items-center gap-2">
-            <span className="w-6 h-6 rounded bg-primary/10 flex items-center justify-center text-primary text-[10px] font-bold">RA</span>
-            <p>Auditext. Where words find their voice. Crafted with ❤️ by <span className="text-foreground">Rehan Ahmad</span></p>
+          <div className="flex items-center gap-2 group">
+            <span className="w-6 h-6 rounded bg-primary flex items-center justify-center text-white text-[10px] font-bold shadow-sm transition-transform group-hover:scale-110">RA</span>
+            <p className="leading-relaxed">Auditext. Where words find their voice.<br className="md:hidden" /> Crafted with ❤️ by <span className="text-foreground">Rehan Ahmad</span></p>
           </div>
           <div className="flex items-center gap-6">
             <Link to="/docs" className="hover:text-primary transition-colors">Documentation</Link>
@@ -632,7 +822,7 @@ export default function Home() {
                   {history.length > 0 && (
                     deletingId === "all" ? (
                       <div className="flex items-center gap-1">
-                        <Button variant="destructive" size="sm" onClick={() => { setHistory([]); setDeletingId(null); }} className="text-xs">Yes, Clear</Button>
+                        <Button variant="destructive" size="sm" onClick={handleClearHistory} className="text-xs">Yes, Clear</Button>
                         <Button variant="ghost" size="sm" onClick={() => setDeletingId(null)} className="text-xs px-1 hover:bg-transparent"><X className="w-3 h-3" /></Button>
                       </div>
                     ) : (
@@ -676,7 +866,7 @@ export default function Home() {
                         {deletingId === h.id ? (
                           <div className="absolute -top-3 -right-2 bg-background border shadow-md rounded-lg p-1 flex items-center gap-1 z-10">
                             <span className="text-[10px] px-1 font-medium text-destructive">Delete?</span>
-                            <Button size="icon" variant="ghost" className="w-5 h-5 text-destructive rounded-sm" onClick={() => { setHistory(history.filter(item => item.id !== h.id)); setDeletingId(null); }}>
+                            <Button size="icon" variant="ghost" className="w-5 h-5 text-destructive rounded-sm" onClick={() => handleDeleteItem(h.id)}>
                               <Check className="w-3 h-3" />
                             </Button>
                             <Button size="icon" variant="ghost" className="w-5 h-5 rounded-sm" onClick={() => setDeletingId(null)}>

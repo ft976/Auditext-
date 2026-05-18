@@ -17,17 +17,19 @@ export default function Privacy() {
 
   return (
     <div className="min-h-screen bg-background text-foreground transition-colors duration-300 font-sans">
-      <header className="fixed top-0 w-full z-50 bg-background/80 backdrop-blur-md border-b">
-        <div className="max-w-4xl mx-auto px-6 h-16 flex items-center justify-between">
+      <header className="sticky top-0 w-full z-50 bg-background/80 backdrop-blur-md border-b">
+        <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
           <Link to="/">
-            <Button variant="ghost" size="sm" className="gap-2">
+            <Button variant="ghost" size="sm" className="gap-2 hover:bg-primary/5">
               <ArrowLeft className="w-4 h-4" />
               Back to Studio
             </Button>
           </Link>
           <div className="flex items-center gap-4">
-            <div className="flex items-center gap-2">
-              <Shield className="w-5 h-5 text-primary" />
+            <div className="flex items-center gap-2 group cursor-default">
+              <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center text-primary transition-transform group-hover:scale-110">
+                <Shield className="w-5 h-5" />
+              </div>
               <span className="font-bold tracking-tight">Auditext Privacy</span>
             </div>
             <Button variant="ghost" size="icon" onClick={() => setDarkMode(!darkMode)} className="rounded-full">
@@ -110,10 +112,10 @@ export default function Privacy() {
         </motion.div>
       </main>
 
-      <footer className="border-t py-12 bg-white/50">
-        <div className="max-w-4xl mx-auto px-6 flex flex-col md:flex-row items-center justify-between gap-6">
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded bg-primary flex items-center justify-center text-white font-bold">RA</div>
+      <footer className="border-t py-12 bg-white/50 dark:bg-black/20 mt-auto">
+        <div className="max-w-7xl mx-auto px-6 flex flex-col md:flex-row items-center justify-between gap-6">
+          <div className="flex items-center gap-2 group text-left">
+            <div className="w-8 h-8 rounded bg-primary flex items-center justify-center text-white font-bold shadow-lg shadow-primary/20 transition-transform group-hover:scale-110">RA</div>
             <p className="text-sm font-medium leading-relaxed">Auditext. Where words find their voice.<br className="md:hidden" /> Crafted with ❤️ by Rehan Ahmad</p>
           </div>
           <div className="flex gap-8 text-sm text-muted-foreground">
