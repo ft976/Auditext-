@@ -727,10 +727,10 @@ export default function Home() {
               <div className="flex-1">
                 <div className="flex justify-between text-xs mb-2">
                   <span className="text-muted-foreground">Speed</span>
-                  <span className="font-medium">{(speed || 1.0).toFixed(2)}x</span>
+                  <span className="font-medium">{(typeof speed === 'number' && !isNaN(speed) ? speed : 1.0).toFixed(2)}x</span>
                 </div>
                 <Slider
-                  value={[isNaN(speed) ? 1.0 : speed]}
+                  value={[typeof speed === 'number' && !isNaN(speed) ? speed : 1.0]}
                   min={0.5} max={2.0} step={0.05}
                   onValueChange={handleSpeedChange}
                 />

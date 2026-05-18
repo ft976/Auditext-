@@ -1,10 +1,6 @@
 # 🎙️ Auditext: Advanced Multi-Provider TTS Studio
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Build Status](https://img.shields.io/badge/build-passing-brightgreen.svg)]()
-[![Author: Rehan Ahmad](https://img.shields.io/badge/Author-Rehan%20Ahmad-blue.svg)](mailto:rehan515ahmad@gmail.com)
-[![Tech: React](https://img.shields.io/badge/Tech-React-61dafb.svg)]()
-[![Style: Tailwind](https://img.shields.io/badge/Style-Tailwind-38bdf8.svg)]()
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT) [![Build Status](https://img.shields.io/badge/build-passing-brightgreen.svg)]() [![Author: Rehan Ahmad](https://img.shields.io/badge/Author-Rehan%20Ahmad-blue.svg)](mailto:rehan515ahmad@gmail.com) [![Tech: React](https://img.shields.io/badge/Tech-React-61dafb.svg)]() [![Style: Tailwind](https://img.shields.io/badge/Style-Tailwind-38bdf8.svg)]()
 
 Auditext is a professional-grade Text-to-Speech (TTS) studio that bridges the gap between various industry-leading AI voice providers into a single, unified interface. It empowers creators to synthesize high-fidelity audio using models from Google Gemini, OpenAI, ElevenLabs, Deepgram, and Cartesia.
 
