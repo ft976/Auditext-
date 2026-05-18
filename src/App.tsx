@@ -4,12 +4,23 @@
  */
 
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Home from "./pages/Home";
+import Docs from "./pages/Docs";
+import Privacy from "./pages/Privacy";
+import ScrollToTop from "./components/ScrollToTop";
 
 export default function App() {
   return (
-    <TooltipProvider>
-      <Home />
-    </TooltipProvider>
+    <BrowserRouter>
+      <ScrollToTop />
+      <TooltipProvider>
+        <Routes>
+          <Route path="/" element={<Home />} />
+          <Route path="/docs" element={<Docs />} />
+          <Route path="/privacy" element={<Privacy />} />
+        </Routes>
+      </TooltipProvider>
+    </BrowserRouter>
   );
 }

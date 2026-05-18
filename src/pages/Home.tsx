@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
+import { Link } from "react-router-dom";
 import { motion, AnimatePresence } from "motion/react";
 import { Play, Square, Download, Moon, Sun, Clock, Languages, ChevronDown, Check, X, Settings, AudioLines } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -248,7 +249,10 @@ export default function Home() {
   const [emotion, setEmotion] = useState("neutral");
   const [speed, setSpeed] = useState(1.0);
   const [status, setStatus] = useState<"idle" | "loading" | "playing" | "paused">("idle");
-  const [darkMode, setDarkMode] = useState(true);
+  const [darkMode, setDarkMode] = useState(() => {
+    const saved = localStorage.getItem("auditextDarkMode");
+    return saved !== null ? JSON.parse(saved) : true;
+  });
   const [showHistory, setShowHistory] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
   const [downloadUrl, setDownloadUrl] = useState<string | null>(null);
@@ -287,6 +291,7 @@ export default function Home() {
   
   useEffect(() => {
     document.documentElement.classList.toggle("dark", darkMode);
+    localStorage.setItem("auditextDarkMode", JSON.stringify(darkMode));
   }, [darkMode]);
 
   useEffect(() => {
@@ -583,6 +588,28 @@ export default function Home() {
           <QuoteCard />
         </div>
       </main>
+      
+      <footer className="max-w-7xl mx-auto px-6 pt-16 pb-8">
+        <div className="border-t pt-8 flex flex-col md:flex-row items-center justify-between gap-4 text-sm text-muted-foreground font-medium">
+          <div className="flex items-center gap-2">
+            <span className="w-6 h-6 rounded bg-primary/10 flex items-center justify-center text-primary text-[10px] font-bold">RA</span>
+            <p>Auditext. Where words find their voice. Crafted with ❤️ by <span className="text-foreground">Rehan Ahmad</span></p>
+          </div>
+          <div className="flex items-center gap-6">
+            <Link to="/docs" className="hover:text-primary transition-colors">Documentation</Link>
+            <Link to="/privacy" className="hover:text-primary transition-colors">Privacy</Link>
+            <a 
+              href="https://www.linkedin.com/in/rehan-ahmad-863386382?utm_source=share_via&utm_content=profile&utm_medium=member_android" 
+              target="_blank" 
+              rel="noopener noreferrer" 
+              className="hover:text-primary transition-colors flex items-center gap-1"
+            >
+              LinkedIn
+            </a>
+            <a href="mailto:rehan515ahmad@gmail.com" className="hover:text-primary transition-colors">Support</a>
+          </div>
+        </div>
+      </footer>
 
       <AnimatePresence>
         {showHistory && (

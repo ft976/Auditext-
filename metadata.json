@@ -1,6 +1,6 @@
 {
-  "name": "Auditext",
-  "description": "A polished AI text-to-speech app generating emotional voice audio",
+  "name": "Auditext | Professional AI Voice Studio",
+  "description": "The ultimate AI voice studio by Rehan Ahmad. Create emotional, human-like speech using top-tier models from Gemini, OpenAI, and ElevenLabs.",
   "requestFramePermissions": [],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }

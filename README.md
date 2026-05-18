@@ -1,5 +1,11 @@
 # 🎙️ Auditext: Advanced Multi-Provider TTS Studio
 
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Build Status](https://img.shields.io/badge/build-passing-brightgreen.svg)]()
+[![Author: Rehan Ahmad](https://img.shields.io/badge/Author-Rehan%20Ahmad-blue.svg)](mailto:rehan515ahmad@gmail.com)
+[![Tech: React 19](https://img.shields.io/badge/Tech-React%2019-61dafb.svg)]()
+[![Style: Tailwind 4](https://img.shields.io/badge/Style-Tailwind%204-38bdf8.svg)]()
+
 Auditext is a professional-grade Text-to-Speech (TTS) studio that bridges the gap between various industry-leading AI voice providers into a single, unified interface. It empowers creators to synthesize high-fidelity audio using models from Google Gemini, OpenAI, ElevenLabs, Deepgram, and Cartesia.
 
 ---
@@ -175,3 +181,13 @@ Auditext uses a structured **Prompt Engineering System** for providers that don'
 > *"You are a professional voice actor. Read the text very softly and intimately, as if whispering a secret close to someone's ear — hushed, slow, private."*
 
 This ensures consistent emotional output across different models that might not have built-in "emotion" tags.
+
+---
+
+## 📄 License
+
+This project is licensed under the **MIT License**.
+
+Copyright © 2026 **Rehan Ahmad**.
+See the [LICENSE](./LICENSE) file for details.
+
