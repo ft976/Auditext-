@@ -6,6 +6,7 @@ import {
   User 
 } from "firebase/auth";
 import { auth, googleProvider } from "../lib/firebase";
+import { safeStringify } from "../lib/json";
 
 interface AuthContextType {
   user: User | null;
@@ -83,20 +84,6 @@ interface FirestoreErrorInfo {
 }
 
 export function handleFirestoreError(error: unknown, operationType: OperationType, path: string | null) {
-  // Helper to safely stringify objects, handling circular references
-  const safeStringify = (obj: any) => {
-    const cache = new Set();
-    return JSON.stringify(obj, (key, value) => {
-      if (typeof value === 'object' && value !== null) {
-        if (cache.has(value)) {
-          return; // Circular reference found, discard
-        }
-        cache.add(value);
-      }
-      return value;
-    });
-  };
-
   const errInfo: FirestoreErrorInfo = {
     error: error instanceof Error ? error.message : String(error),
     authInfo: {

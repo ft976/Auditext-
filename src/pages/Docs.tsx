@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { ArrowLeft, BookOpen, Cpu, ShieldCheck, Key, Zap, Sun, Moon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { motion } from "motion/react";
+import { safeStringify } from "../lib/json";
 
 export default function Docs() {
   const [darkMode, setDarkMode] = useState(() => {
@@ -12,7 +13,7 @@ export default function Docs() {
 
   useEffect(() => {
     document.documentElement.classList.toggle("dark", darkMode);
-    localStorage.setItem("auditextDarkMode", JSON.stringify(darkMode));
+    localStorage.setItem("auditextDarkMode", safeStringify(darkMode));
   }, [darkMode]);
 
   return (

@@ -14,6 +14,7 @@ import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from "@/comp
 import { cn } from "@/lib/utils";
 import { useStudio } from "../context/StudioContext";
 import { useAuth, OperationType, handleFirestoreError } from "../context/AuthContext";
+import { safeStringify } from "../lib/json";
 import { db } from "../lib/firebase";
 import { collection, addDoc, query, orderBy, limit, onSnapshot, serverTimestamp, setDoc, doc, getDoc, deleteDoc, getDocs, writeBatch } from "firebase/firestore";
 
@@ -117,7 +118,7 @@ function SettingsPopover({ apiKeys, setApiKeys, provider, setProvider, user, log
       const res = await fetch("/api/verify-key", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ provider: providerName, apiKey: key })
+        body: safeStringify({ provider: providerName, apiKey: key })
       });
 
       if (!res.ok) {
@@ -331,7 +332,7 @@ export default function Home() {
     } else {
       const newHistory = history.filter(item => item.id !== id);
       setHistory(newHistory);
-      localStorage.setItem("auditextHistory", JSON.stringify(newHistory));
+      localStorage.setItem("auditextHistory", safeStringify(newHistory));
     }
     setDeletingId(null);
   };
@@ -382,11 +383,11 @@ export default function Home() {
   
   useEffect(() => {
     document.documentElement.classList.toggle("dark", darkMode);
-    localStorage.setItem("auditextDarkMode", JSON.stringify(darkMode));
+    localStorage.setItem("auditextDarkMode", safeStringify(darkMode));
   }, [darkMode]);
 
   useEffect(() => {
-    localStorage.setItem("auditextApiKeys", JSON.stringify(apiKeys));
+    localStorage.setItem("auditextApiKeys", safeStringify(apiKeys));
     localStorage.setItem("auditextProvider", provider);
   }, [apiKeys, provider]);
 
@@ -418,7 +419,7 @@ export default function Home() {
       const res = await fetch("/api/tts", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ text, voice, emotion, language, provider, apiKeys }),
+        body: safeStringify({ text, voice, emotion, language, provider, apiKeys }),
       });
 
       if (!res.ok) {
@@ -637,8 +638,8 @@ export default function Home() {
     <div className="min-h-screen bg-background text-foreground transition-colors pb-12">
       {renderHeader()}
 
-      <main className="max-w-7xl mx-auto mt-8 px-6 grid grid-cols-1 lg:grid-cols-[1fr_360px] gap-8 relative">
-        <div className="space-y-8">
+      <main className="max-w-md mx-auto mt-4 px-4 flex flex-col gap-6 relative min-h-screen bg-card/10 sm:border-x shadow-2xl">
+        <div className="space-y-6">
           <div className="p-6 rounded-2xl bg-card border shadow-sm">
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-2">

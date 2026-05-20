@@ -2,6 +2,7 @@ import express from "express";
 import path from "path";
 import { createServer as createViteServer } from "vite";
 import { GoogleGenAI, Modality } from "@google/genai";
+import { safeStringify } from "./src/lib/json";
 
 const getAiClient = () => {
   if (!process.env.GEMINI_API_KEY) {
@@ -172,7 +173,7 @@ async function startServer() {
             "Authorization": `Bearer ${apiKey}`,
             "Content-Type": "application/json"
           },
-          body: JSON.stringify({
+          body: safeStringify({
             model: "tts-1",
             input: text,
             voice: voice,
@@ -208,7 +209,7 @@ async function startServer() {
             "xi-api-key": apiKey,
             "Content-Type": "application/json"
           },
-          body: JSON.stringify({
+          body: safeStringify({
             text: text,
             model_id: "eleven_multilingual_v2",
           })
@@ -280,7 +281,7 @@ async function startServer() {
             "Authorization": `Token ${apiKey}`,
             "Content-Type": "application/json"
           },
-          body: JSON.stringify({ text })
+          body: safeStringify({ text })
         });
 
         if (!response.ok) {
@@ -320,7 +321,7 @@ async function startServer() {
             "Cartesia-Version": "2024-06-10",
             "Content-Type": "application/json"
           },
-          body: JSON.stringify({
+          body: safeStringify({
             transcript: text,
             model_id: "sonic-english",
             voice: { mode: "id", id: voiceId },
